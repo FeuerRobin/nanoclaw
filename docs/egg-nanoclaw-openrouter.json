@@ -1,0 +1,82 @@
+{
+  "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-03-17T00:00:00+00:00",
+  "name": "NanoClaw (OpenRouter)",
+  "author": "opensource@nanoclaw.local",
+  "description": "NanoClaw configured for Pterodactyl process mode with OpenRouter using stepfun/step-3.5-flash:free by default.",
+  "features": null,
+  "docker_images": {
+    "ghcr.io/parkervcp/yolks:nodejs_20": "ghcr.io/parkervcp/yolks:nodejs_20"
+  },
+  "file_denylist": [],
+  "startup": "cd /mnt/server && if [ ! -f .env ]; then cat > .env <<EOF\nANTHROPIC_BASE_URL=https://openrouter.ai/api/anthropic\nANTHROPIC_AUTH_TOKEN={{OPENROUTER_API_KEY}}\nANTHROPIC_MODEL={{OPENROUTER_MODEL}}\nASSISTANT_NAME={{ASSISTANT_NAME}}\nRUNTIME_MODE=process\nPTERODACTYL=1\nEOF\nelse grep -q '^ANTHROPIC_BASE_URL=' .env || echo 'ANTHROPIC_BASE_URL=https://openrouter.ai/api/anthropic' >> .env; grep -q '^ANTHROPIC_AUTH_TOKEN=' .env || echo 'ANTHROPIC_AUTH_TOKEN={{OPENROUTER_API_KEY}}' >> .env; grep -q '^ANTHROPIC_MODEL=' .env || echo 'ANTHROPIC_MODEL={{OPENROUTER_MODEL}}' >> .env; grep -q '^ASSISTANT_NAME=' .env || echo 'ASSISTANT_NAME={{ASSISTANT_NAME}}' >> .env; grep -q '^RUNTIME_MODE=' .env || echo 'RUNTIME_MODE=process' >> .env; grep -q '^PTERODACTYL=' .env || echo 'PTERODACTYL=1' >> .env; fi && npm start",
+  "config": {
+    "files": "{}",
+    "startup": "{\n      \"done\": \"Starting NanoClaw\"\n    }",
+    "logs": "{}",
+    "stop": "^C"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\nset -e\ncd /mnt/server\nif [ ! -f package.json ]; then\n  git clone {{GIT_REPO}} --branch {{GIT_BRANCH}} --depth 1 .\nfi\nnpm install\nnpm run build\n",
+      "container": "ghcr.io/parkervcp/installers:debian",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Git Repository",
+      "description": "Repository used to install NanoClaw.",
+      "env_variable": "GIT_REPO",
+      "default_value": "https://github.com/FeuerRobin/nanoclaw.git",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Git Branch",
+      "description": "Branch to install.",
+      "env_variable": "GIT_BRANCH",
+      "default_value": "main",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "OpenRouter API Key",
+      "description": "Your OpenRouter API key.",
+      "env_variable": "OPENROUTER_API_KEY",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "OpenRouter Model",
+      "description": "Claude-compatible model routed through OpenRouter.",
+      "env_variable": "OPENROUTER_MODEL",
+      "default_value": "stepfun/step-3.5-flash:free",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Assistant Name",
+      "description": "Trigger name for NanoClaw.",
+      "env_variable": "ASSISTANT_NAME",
+      "default_value": "Andy",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:32",
+      "field_type": "text"
+    }
+  ]
+}
