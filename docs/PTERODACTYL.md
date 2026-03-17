@@ -29,6 +29,10 @@ When detected, NanoClaw switches from Docker mode to process mode automatically.
 
 ## Setup in Pterodactyl
 
+### Import Egg (recommended)
+
+Import `/docs/egg-nanoclaw-openrouter.json` in your Pterodactyl panel to create a server preset that installs NanoClaw and configures OpenRouter with `stepfun/step-3.5-flash:free` by default.
+
 ### 1. Prerequisites
 
 - Node.js 20+ installed in your Pterodactyl container
