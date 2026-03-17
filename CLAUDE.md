@@ -4,7 +4,11 @@ Personal Claude assistant. See [README.md](README.md) for philosophy and setup. 
 
 ## Quick Context
 
-Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs). Each group has isolated filesystem and memory.
+Single Node.js process with skill-based channel system. Channels (WhatsApp, Telegram, Slack, Discord, Gmail) are skills that self-register at startup. Messages route to Claude Agent SDK running in containers (Linux VMs) or as native processes. Each group has isolated filesystem and memory.
+
+**Runtime Modes:**
+- **Docker mode** (default): Agents run in isolated Linux containers for maximum security
+- **Process mode**: Agents run as native child processes (auto-detected when NanoClaw runs inside a container like Pterodactyl)
 
 ## Key Files
 
@@ -16,6 +20,8 @@ Single Node.js process with skill-based channel system. Channels (WhatsApp, Tele
 | `src/router.ts` | Message formatting and outbound routing |
 | `src/config.ts` | Trigger pattern, paths, intervals |
 | `src/container-runner.ts` | Spawns agent containers with mounts |
+| `src/process-runner.ts` | Spawns agents as child processes (process mode) |
+| `src/container-runtime.ts` | Runtime abstraction layer, auto-detects container environment |
 | `src/task-scheduler.ts` | Runs scheduled tasks |
 | `src/db.ts` | SQLite operations |
 | `groups/{name}/CLAUDE.md` | Per-group memory (isolated) |
@@ -59,6 +65,12 @@ systemctl --user restart nanoclaw
 
 **WhatsApp not connecting after upgrade:** WhatsApp is now a separate channel fork, not bundled in core. Run `/add-whatsapp` (or `git remote add whatsapp https://github.com/qwibitai/nanoclaw-whatsapp.git && git fetch whatsapp main && (git merge whatsapp/main || { git checkout --theirs package-lock.json && git add package-lock.json && git merge --continue; }) && npm run build`) to install it. Existing auth credentials and groups are preserved.
 
+**Running in Pterodactyl or other containers:** NanoClaw automatically detects when it's running inside a container and switches to process mode (agents run as child processes instead of nested containers). To force a specific mode, set `RUNTIME_MODE=process` or `RUNTIME_MODE=docker` in your environment.
+
+**Process mode detection:** NanoClaw checks for `/.dockerenv`, `/proc/1/cgroup` patterns, or `PTERODACTYL` environment variable to detect containerized environments.
+
 ## Container Build Cache
 
 The container buildkit caches the build context aggressively. `--no-cache` alone does NOT invalidate COPY steps — the builder's volume retains stale files. To force a truly clean rebuild, prune the builder then re-run `./container/build.sh`.
+
+Note: In process mode, no Docker image is needed. The agent-runner is compiled directly on the host and run as a child process.
