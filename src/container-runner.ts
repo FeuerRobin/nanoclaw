@@ -21,6 +21,7 @@ import { logger } from './logger.js';
 import {
   CONTAINER_HOST_GATEWAY,
   CONTAINER_RUNTIME_BIN,
+  RUNTIME_MODE,
   hostGatewayArgs,
   readonlyMountArgs,
   stopContainer,
@@ -28,6 +29,7 @@ import {
 import { detectAuthMode } from './credential-proxy.js';
 import { validateAdditionalMounts } from './mount-security.js';
 import { RegisteredGroup } from './types.js';
+import { runProcessAgent } from './process-runner.js';
 
 // Sentinel markers for robust output parsing (must match agent-runner)
 const OUTPUT_START_MARKER = '---NANOCLAW_OUTPUT_START---';
@@ -264,7 +266,7 @@ function buildContainerArgs(
   return args;
 }
 
-export async function runContainerAgent(
+export async function runDockerAgent(
   group: RegisteredGroup,
   input: ContainerInput,
   onProcess: (proc: ChildProcess, containerName: string) => void,
@@ -705,3 +707,24 @@ export function writeGroupsSnapshot(
     ),
   );
 }
+
+/**
+ * Unified agent runner that chooses between Docker containers and native processes.
+ * In process mode (when running inside a container like Pterodactyl), agents run as
+ * child processes instead of spawning nested containers.
+ */
+export async function runContainerAgent(
+  group: RegisteredGroup,
+  input: ContainerInput,
+  onProcess: (proc: ChildProcess, containerName: string) => void,
+  onOutput?: (output: ContainerOutput) => Promise<void>,
+): Promise<ContainerOutput> {
+  if (RUNTIME_MODE === 'process') {
+    logger.debug({ group: group.name }, 'Using process mode for agent execution');
+    return runProcessAgent(group, input, onProcess, onOutput);
+  } else {
+    logger.debug({ group: group.name }, 'Using Docker mode for agent execution');
+    return runDockerAgent(group, input, onProcess, onOutput);
+  }
+}
+

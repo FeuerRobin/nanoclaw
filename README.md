@@ -88,7 +88,7 @@ Then run `/setup`. Claude Code handles everything: dependencies, authentication,
 - **Main channel** - Your private channel (self-chat) for admin control; every group is completely isolated
 - **Scheduled tasks** - Recurring jobs that run Claude and can message you back
 - **Web access** - Search and fetch content from the Web
-- **Container isolation** - Agents are sandboxed in [Docker Sandboxes](https://nanoclaw.dev/blog/nanoclaw-docker-sandboxes) (micro VM isolation), Apple Container (macOS), or Docker (macOS/Linux)
+- **Container isolation** - Agents are sandboxed in [Docker Sandboxes](https://nanoclaw.dev/blog/nanoclaw-docker-sandboxes) (micro VM isolation), Apple Container (macOS), Docker (macOS/Linux), or as native processes when running inside containerized environments like Pterodactyl
 - **Agent Swarms** - Spin up teams of specialized agents that collaborate on complex tasks
 - **Optional integrations** - Add Gmail (`/add-gmail`) and more via skills
 
@@ -142,10 +142,13 @@ Skills we'd like to see:
 
 ## Requirements
 
-- macOS or Linux
+- macOS or Linux (or any containerized environment like Pterodactyl)
 - Node.js 20+
 - [Claude Code](https://claude.ai/download)
-- [Apple Container](https://github.com/apple/container) (macOS) or [Docker](https://docker.com/products/docker-desktop) (macOS/Linux)
+- **Container runtime** (one of the following):
+  - [Apple Container](https://github.com/apple/container) (macOS only - lightweight)
+  - [Docker](https://docker.com/products/docker-desktop) (macOS/Linux - cross-platform)
+  - None (when running inside Pterodactyl or another container - uses process mode automatically)
 
 ## Architecture
 
@@ -174,9 +177,17 @@ Key files:
 
 Docker provides cross-platform support (macOS, Linux and even Windows via WSL2) and a mature ecosystem. On macOS, you can optionally switch to Apple Container via `/convert-to-apple-container` for a lighter-weight native runtime.
 
+When NanoClaw detects that it's running inside a container (e.g., Pterodactyl), it automatically switches to process mode where agents run as native child processes instead of nested containers.
+
 **Can I run this on Linux?**
 
 Yes. Docker is the default runtime and works on both macOS and Linux. Just run `/setup`.
+
+**Can I run this inside Pterodactyl or another container?**
+
+Yes! NanoClaw automatically detects when it's running inside a container and switches to process mode. In this mode, agents run as child processes instead of nested containers. No Docker is required when running inside Pterodactyl.
+
+You can also manually force process mode by setting `RUNTIME_MODE=process` in your environment variables.
 
 **Is this secure?**
 
