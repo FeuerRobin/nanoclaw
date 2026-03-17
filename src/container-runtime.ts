@@ -8,7 +8,39 @@ import os from 'os';
 
 import { logger } from './logger.js';
 
-/** The container runtime binary name. */
+/**
+ * Detect if we're running inside a container (e.g., Pterodactyl).
+ * Check for common container indicators.
+ */
+function detectIfInContainer(): boolean {
+  // Check for /.dockerenv file (Docker)
+  if (fs.existsSync('/.dockerenv')) {
+    return true;
+  }
+
+  // Check for container in /proc/1/cgroup
+  try {
+    const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf-8');
+    if (cgroup.includes('docker') || cgroup.includes('lxc') || cgroup.includes('kubepods')) {
+      return true;
+    }
+  } catch {
+    // File doesn't exist or can't be read (probably not Linux)
+  }
+
+  // Check for Pterodactyl-specific environment variable
+  if (process.env.PTERODACTYL) {
+    return true;
+  }
+
+  return false;
+}
+
+/** The runtime mode: 'docker' or 'process' */
+export const RUNTIME_MODE = process.env.RUNTIME_MODE ||
+  (detectIfInContainer() ? 'process' : 'docker');
+
+/** The container runtime binary name (only used when RUNTIME_MODE === 'docker'). */
 export const CONTAINER_RUNTIME_BIN = 'docker';
 
 /** Hostname containers use to reach the host machine. */
@@ -64,6 +96,12 @@ export function stopContainer(name: string): string {
 
 /** Ensure the container runtime is running, starting it if needed. */
 export function ensureContainerRuntimeRunning(): void {
+  // In process mode, no container runtime is needed
+  if (RUNTIME_MODE === 'process') {
+    logger.info('Running in process mode (no container runtime needed)');
+    return;
+  }
+
   try {
     execSync(`${CONTAINER_RUNTIME_BIN} info`, {
       stdio: 'pipe',
@@ -94,6 +132,15 @@ export function ensureContainerRuntimeRunning(): void {
       '║  3. Restart NanoClaw                                           ║',
     );
     console.error(
+      '║                                                                ║',
+    );
+    console.error(
+      '║  OR: If running in a containerized environment (e.g. Pterodactyl), ║',
+    );
+    console.error(
+      '║  set RUNTIME_MODE=process to run agents as processes          ║',
+    );
+    console.error(
       '╚════════════════════════════════════════════════════════════════╝\n',
     );
     throw new Error('Container runtime is required but failed to start');
@@ -102,6 +149,12 @@ export function ensureContainerRuntimeRunning(): void {
 
 /** Kill orphaned NanoClaw containers from previous runs. */
 export function cleanupOrphans(): void {
+  // In process mode, no containers to clean up
+  if (RUNTIME_MODE === 'process') {
+    logger.debug('Process mode: no orphaned containers to clean up');
+    return;
+  }
+
   try {
     const output = execSync(
       `${CONTAINER_RUNTIME_BIN} ps --filter name=nanoclaw- --format '{{.Names}}'`,
